@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<HTML>
+
+<head>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+            visibility: hidden;
+        }
+
+    </style>
+    <title>SEARCH MAP</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h2 id="text-center">Enter Location:</h2>
+
+        <!--input location-->
+        <form id="loc-form">
+            <input type="text" id="loc-input" class="form-control form-control-lg">
+            <br>
+            <button type="submit" class="btn btn-primary btn-block">Enter</button>
+        </form>
+
+        <!--where to plce the adress-->
+        <div class="card-body" id="formatted"></div>
+        <div class="card-body" id="addcomp"></div>
+        <div class="card-body" id="geo"></div>
+        <div id="map"></div>
+
+    </div>
+    <script>
+        // call geocode func
+        //geocode();
+
+        // get location form
+        var locationform = document.getElementById('loc-form');
+
+        //listen for submit
+        locationform.addEventListener('submit', geocode);
+
+        // when you click submit it will try to submit it to a webpage hence the blink
+
+        function geocode(e) {
+
+            // catch the submit form before submission. e is the event of 
+            e.preventDefault();
+
+            // get input from box by .value 
+            var location = document.getElementById('loc-input').value;
+            //makes a request to HTTP
+            // first paramater is the url
+            // second parameter is an opbject of the address
+            // params has the adress to be put in URl and the my API from google
+            //json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=MYAPIKEY
+            // so the adress params ^^ are added infro of the URL
+            axios.get('https://maps.googleapis.com/maps/api/geocode/json?', {
+                params: {
+                    address: location,
+                    key: 'AIzaSyDlQgvcSeJU6oAy1xc8O3okF-HtHuTAWr4'
+                }
+            }).then(function(response) {
+                //.then runs the fucntion response with the get data and returns expected response
+                //log full response
+                console.log(response);
+
+                //formatted Address when found from consol log response.. it gets the data from result array 0 and gets formatted address
+                var format = response.data.results[0].formatted_address;
+
+                //the backticks are for multiline use and creata templete string
+                // ${} is to use vars in template string
+                var formatoutput = `
+                        <ul class="list-group">
+                <li class="list-group-item">${format}</li>
+                </ul>`;
+
+                //Address Components
+                // this var same function a the format var
+                var comp = response.data.results[0].address_components;
+
+                var zoom = 0;
+                var sn = "street_number";
+                // var for list start
+                var compout = '<ul class="list-group">';
+                // loops through data in comp until comp length
+                for (var i = 0; i < comp.length; i++) {
+                    // inserts lines for type and longname from arrays 
+                    compout += `
+                <li class="list-group-item"><strong>${comp[i].types[0]}</strong>: ${comp[i].long_name}</li>            
+                    `;
+                }
+                //loop that checks if the seach has street number then zoom closer
+                if (comp[0].types[0] === sn) {
+                    zoom = 15;
+                } else {
+                    zoom = 4;
+                }
+                // += is to add to var. and ends ul once for loop is done
+                compout += '</ul>';
+
+                //Geomtery
+                //gets lat from geometry .location
+                var lat = response.data.results[0].geometry.location.lat;
+                var lng = response.data.results[0].geometry.location.lng;
+
+                // new location object for map pic
+                var loc = {
+                    lat: lat,
+                    lng: lng
+                };
+
+                // call map func wiht loc and zoom vars
+                initMap(loc, zoom);
+                var geoout = `
+                        <ul class="list-group">
+                <li class="list-group-item"><strong>Latitude</strong>: ${lat}</li>
+                <li class="list-group-item"><strong>Longitude</strong>: ${lng}</li>
+                </ul>`;
+                // when program sucessful it shows map otherwise map is hidden
+                document.getElementById('map').style.visibility = 'visible';
+
+                //output to app into the div 
+                document.getElementById('formatted').innerHTML = formatoutput;
+                document.getElementById('addcomp').innerHTML = compout;
+
+                document.getElementById('geo').innerHTML = geoout;
+
+
+
+            }).catch(function(error) {
+                //.catch has function which returns an error if the data is not what is expected
+                console.log(error + " WTF");
+            });
+
+        }
+
+        // the l is location var and z is zoom var from above
+        function initMap(l, z) {
+
+            //new map
+            var map = new google.maps.Map(document.getElementById("map"), {
+                //object for map location
+                zoom: z,
+                center: l
+            });
+
+            addMarker(l);
+
+            function addMarker(coords) {
+                var marker = new google.maps.Marker({
+                    //object for marker
+                    position: coords,
+                    map: map,
+                });
+
+            }
+        }
+
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD9QAatb5GvbSPSL7KZ_KWctn4I2mHaJbE
+&callback=initMap">
+        // callback=initmap calls innit function from ^ script tag
+
+    </script>
+</body>
+
+</HTML>
